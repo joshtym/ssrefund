@@ -1,0 +1,6 @@
+name: SSRefund
+main: com.serendipitymc.refund.refund.refund
+author: nickewa
+dev-url: http://www.serendiptymc.com
+description: A semi-automated refund system for serendipity servers
+version: 1.0.0
