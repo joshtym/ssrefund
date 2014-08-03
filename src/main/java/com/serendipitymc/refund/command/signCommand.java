@@ -35,6 +35,8 @@ public class signCommand implements CommandExecutor {
 				Integer refundId = refunds.getLatestRefundId(player.getName().toLowerCase());
 				refunds.signRefund(refundId);
 				utils.sendMessageGG(player, "Thank you for confirming refund request #" + refundId.toString());
+				utils.notifyOnlineAdminsGB(player.getName().toLowerCase() + " has signed off on refund id " + refundId.toString());
+				utils.notifyOnlineAdminsGB("To review, please do /refund detail <id>  or /refund approve|deny|test <id>");
 				utils.sendMessageGG(player, "It is now in queue to be verified by staff members");
 			} catch (Exception e) {
 				utils.sendMessageGG((Player) sender, "Something went wrong, please report error ssr103");

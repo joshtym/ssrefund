@@ -9,7 +9,7 @@ import com.serendipitymc.refund.refund.refund;
 
 public class SSUtil {
 
-	private Player findOnlinePlayerByName(String playerName) {
+	public Player findOnlinePlayerByName(String playerName) {
         Player[] onlinePlayers = Bukkit.getOnlinePlayers();
         Player playerFound = null;
         int foundPlayers = 0;
@@ -52,6 +52,36 @@ public class SSUtil {
 		} else {
 			plugin.getLogger().info(message);
 		}
+	}
+	
+	public void notifyOnlineAdminsGB(String sendMessage) {
+		Player[] onlinePlayers = Bukkit.getOnlinePlayers();
+        if (onlinePlayers.length > 0) {
+            for (Player op : onlinePlayers) {
+                if (op != null) {
+                    if (op.hasPermission("ssrefund.execute")) {
+                        op.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.BLUE + sendMessage);
+                    }
+                }
+            }
+        }
+        onlinePlayers = null;
+        return;
+	}
+	
+	public void sendDeniedMessage(String player, String status) {
+		Player[] onlinePlayers = Bukkit.getOnlinePlayers();
+        if (onlinePlayers.length > 0) {
+            for (Player op : onlinePlayers) {
+                if (op != null) {
+                    if (op.getName().toLowerCase().equals(player.toLowerCase())) {
+                        op.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.BLUE + "Your refund has been " + ChatColor.DARK_BLUE + status);
+                    }
+                }
+            }
+        }
+        onlinePlayers = null;
+        return;
 	}
 	
 	public boolean isNumeric(String str) {

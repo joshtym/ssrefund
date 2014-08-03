@@ -2,6 +2,7 @@ package com.serendipitymc.refund.command;
 
 import java.sql.Timestamp;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -67,4 +68,90 @@ public class refundCommand extends SubCommandExecutor {
 		}
 	}
 	
-}
+	@command(maximumArgsLength = 0, minimumArgsLength = 0, permissions = {"ssrefund.list"}, usage = "/refund list", description = "Shows pending refunds")
+	public void list(CommandSender sender, String[] args) {
+		util = plugin.getUtil();
+		refunds = plugin.getRH();
+		if (sender instanceof Player) {
+			try {
+				refunds.listPendingApprovals((Player) sender);
+			} catch (Exception e) {
+				sender.sendMessage("Something went horribly wrong. Please quote error ssr104");
+			}
+		}
+	}
+	
+	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.list"}, usage = "/refund detail <id>", description = "Shows the full refund detail")
+	public void detail(CommandSender sender, String[] args) {
+		util = plugin.getUtil();
+		refunds = plugin.getRH();
+		if (sender instanceof Player) {
+			try {
+				if (util.isNumeric(args[0])) {
+					refunds.getRefundDetailById((Player) sender, Integer.parseInt(args[0]));
+				} else {
+					util.sendMessageGG((Player) sender, "id needs to be a numeric");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				sender.sendMessage("Something went horribly wrong. Please quote error ssr105");
+			}
+		}
+	}
+	
+	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.deny"}, usage = "/refund deny <id>", description = "Denies a refund request")
+	public void deny(CommandSender sender, String[] args) {
+		util = plugin.getUtil();
+		refunds = plugin.getRH();
+		if (sender instanceof Player) {
+			try {
+				if (util.isNumeric(args[0])) {
+					refunds.denyRefundId(Integer.parseInt(args[0]));
+					sender.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + "Successfully denied refund # " + args[0]);
+				} else {
+					util.sendMessageGG((Player) sender, "id needs to be a numeric");
+				}
+			} catch (Exception e) {
+					sender.sendMessage("Something went boom. Please quote error ssr106");
+				}
+			}
+		}
+	
+	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.execute"}, usage = "/refund approve <id>", description = "Approves a refund request")
+	public void execute(CommandSender sender, String[] args) {
+		util = plugin.getUtil();
+		refunds = plugin.getRH();
+		if (sender instanceof Player) {
+			try {
+				if (util.isNumeric(args[0])) {
+					//refunds.denyRefundId(Integer.parseInt(args[0]));
+					sender.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + "Successfully approved/executed refund # " + args[0]);
+				} else {
+					util.sendMessageGG((Player) sender, "id needs to be a numeric");
+				}
+			} catch (Exception e) {
+					sender.sendMessage("Something went boom. Please quote error ssr107");
+				}
+			}
+		}
+	
+	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.testexecute"}, usage = "/refund test <id>", description = "Tests a refund request")
+	public void test(CommandSender sender, String[] args) {
+		util = plugin.getUtil();
+		refunds = plugin.getRH();
+		if (sender instanceof Player) {
+			try {
+				if (util.isNumeric(args[0])) {
+					//refunds.denyRefundId(Integer.parseInt(args[0]));
+					refunds.testExecute(Integer.parseInt(args[0]), sender.getName().toLowerCase());
+					sender.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + "Successfully tested refund # " + args[0]);
+				} else {
+					util.sendMessageGG((Player) sender, "id needs to be a numeric");
+				}
+			} catch (Exception e) {
+					sender.sendMessage("Something went boom. Please quote error ssr108");
+				}
+			}
+		}
+	}
+
