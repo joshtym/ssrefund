@@ -1,0 +1,11 @@
+max-pending-refunds: 1
+tz: GMT
+tf: 'HH:mm'
+notify-time: 10
+mysql:
+    tables:
+        refunds: 'refund'
+        items: 'refund_detail'
+    ip: localhost/ssrefund
+    user: username
+    password: password
