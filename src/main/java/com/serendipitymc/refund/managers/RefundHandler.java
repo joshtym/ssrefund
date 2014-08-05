@@ -57,6 +57,7 @@ public class RefundHandler {
 			return connection;
 		} catch (Exception e) {
 			plugin.getLogger().severe("Unable to establish a connection to the DB, disabling myself as I'm useless without it");
+			Bukkit.getScheduler().cancelTasks(plugin);
 			plugin.getServer().getPluginManager().disablePlugin(plugin);
 			return null;
 		}
@@ -124,7 +125,7 @@ public class RefundHandler {
 		ps.setInt(2, refundId);
 		ps.execute();
 		ps.close();
-		ps = conn.prepareStatement("INSERT INTO " + thRefundDetail + " (refund_id, amount, item_id, item_meta) VALUES (?,?,?,?) ON DUPLICATE KEY amount = ?");
+		ps = conn.prepareStatement("INSERT INTO " + thRefundDetail + " (refund_id, amount, item_id, item_meta) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE amount = ?");
 		ps.setInt(1, refundId);
 		ps.setInt(2, quantity);
 		ps.setInt(3, itemid);

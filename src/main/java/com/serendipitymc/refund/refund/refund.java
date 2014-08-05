@@ -26,8 +26,6 @@ public class refund extends JavaPlugin{
     
 	@Override
 	public void onEnable() {
-		getLogger().info("Successfully enabled refund plugin");
-
         plugin = this;
         commandManager = new CommandManager(this);
         refundHandler = new RefundHandler();
@@ -41,10 +39,9 @@ public class refund extends JavaPlugin{
         pm.registerEvents(new RefundListener(this), this);
 
         PluginDescriptionFile pdfFile = this.getDescription();
-        // 20 ticks per second
+        // 20 ticks per second - let's do every 2 minutes
         new BukkitRunnable() {
 			 public void run() {
-				 System.out.println("Checking for any pending approved refunds");
 				 try {
 					 String server = Bukkit.getServerName();
 					 refundHandler.executePendingRefund(server);
@@ -53,13 +50,14 @@ public class refund extends JavaPlugin{
 					 e.printStackTrace();
 				 }
 			 }
-		 }.runTaskTimer(this, 20, 600);
+		 }.runTaskTimer(this, 20, 2400);
 		 
 		 
 	}
 	
 	public void onDisable() {
-		getLogger().info("Successfully disabled refund plugin");
+		// Nothing to do really since the handle cleanup otherwise, but let's make sure we cancel our runnable
+		Bukkit.getScheduler().cancelTasks(plugin);
 	}
 	
 	public static refund getInstance() {
