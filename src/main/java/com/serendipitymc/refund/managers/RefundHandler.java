@@ -52,7 +52,7 @@ public class RefundHandler {
 			connection = DriverManager.getConnection("jdbc:mysql://" + hostname, username, password);
 			Statement sh = connection.createStatement();
 			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefund + "(refund_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, opened_by VARCHAR(128) NOT NULL, player VARCHAR(128) NOT NULL, status ENUM('open', 'in progress', 'approved', 'signed off', 'executed', 'denied') DEFAULT 'open', final_decision_by VARCHAR(128), comment VARCHAR(256), servername VARCHAR(128), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, KEY idx_player(player), KEY idx_opened_by(opened_by), KEY idx_status(status), KEY idx_server(servername)) Engine=InnoDB;");
-			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefundDetail + "(detail_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, refund_id INT UNSIGNED NOT NULL, amount INT UNSIGNED NOT NULL, amount_refunded INT UNSIGNED NOT NULL DEFAULT 0, item_id INT UNSIGNED NOT NULL, item_meta INT UNSIGNED NOT NULL, KEY idx_lookup(refund_id, detail_id)) Engine=InnoDB;");
+			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefundDetail + "(detail_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, refund_id INT UNSIGNED NOT NULL, amount INT UNSIGNED NOT NULL, amount_refunded INT UNSIGNED NOT NULL DEFAULT 0, item_id INT UNSIGNED NOT NULL, item_meta INT UNSIGNED NOT NULL, KEY idx_lookup(refund_id, detail_id), UNIQUE KEY (refund_id, item_id, item_meta)) Engine=InnoDB;");
 			connCleanup();
 			return connection;
 		} catch (Exception e) {
@@ -124,11 +124,12 @@ public class RefundHandler {
 		ps.setInt(2, refundId);
 		ps.execute();
 		ps.close();
-		ps = conn.prepareStatement("INSERT INTO " + thRefundDetail + " (refund_id, amount, item_id, item_meta) VALUES (?,?,?,?)");
+		ps = conn.prepareStatement("INSERT INTO " + thRefundDetail + " (refund_id, amount, item_id, item_meta) VALUES (?,?,?,?) ON DUPLICATE KEY amount = ?");
 		ps.setInt(1, refundId);
 		ps.setInt(2, quantity);
 		ps.setInt(3, itemid);
 		ps.setInt(4, metaid);
+		ps.setInt(5, quantity);
 		ps.execute();
 		ps.close();		
 	}
