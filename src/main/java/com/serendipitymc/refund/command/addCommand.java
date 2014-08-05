@@ -84,6 +84,11 @@ public class addCommand  implements CommandExecutor {
 			return;
 		}
 		
+		if ((quantity < 1) || (itemid < 0) || (metaid < 0) ) {
+			utils.sendMessageGG((Player) player, "Can't request 0 items... doh.");
+			return;
+		}
+		
 		Material material = Material.matchMaterial(itemid.toString());
 		if (material != null) {
 			// playerobject.getInventory().addItem(new ItemStack(material, quantity, metaid)); // To be removed

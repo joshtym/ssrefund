@@ -1,5 +1,9 @@
 package com.serendipitymc.refund.util;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -30,6 +34,23 @@ public class SSUtil {
         }
         return playerFound;
     }
+	
+	public List<Player> getOnlinePlayers(HashMap<String, Integer> lookFor) {
+        Player[] onlinePlayers = Bukkit.getOnlinePlayers();
+        List<Player> onlineRefundPlayers = new ArrayList<Player>();
+        
+        if (onlinePlayers.length > 0) {
+            for (Player op : onlinePlayers) {
+                if (op != null) {
+                    if (lookFor.containsKey(op.getName().toLowerCase())) {
+                    	//onlineRefundPlayers.add(op.getName().toLowerCase());
+                    	onlineRefundPlayers.add(op);
+                    }
+                }
+            }
+        }
+        return onlineRefundPlayers;
+	}
 	
 	public void sendMessageGG(Player target, String message) {
 		target.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + message);

@@ -7,6 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import com.serendipitymc.refund.managers.CommandManager;
 import com.serendipitymc.refund.managers.RefundHandler;
@@ -39,6 +40,20 @@ public class refund extends JavaPlugin{
         pm.registerEvents(new RefundListener(this), this);
 
         PluginDescriptionFile pdfFile = this.getDescription();
+        // 20 ticks per second
+        new BukkitRunnable() {
+			 public void run() {
+				 System.out.println("Checking for any pending approved refunds");
+				 try {
+					 refundHandler.executePendingRefund();
+				 } catch (Exception e) {
+					 // Caught an exception
+					 e.printStackTrace();
+				 }
+			 }
+		 }.runTaskTimer(this, 20, 600);
+		 
+		 
 	}
 	
 	public void onDisable() {

@@ -33,6 +33,11 @@ public class signCommand implements CommandExecutor {
 					return true;
 				}
 				Integer refundId = refunds.getLatestRefundId(player.getName().toLowerCase());
+				Integer amountOfItems = refunds.getItemCount(refundId);
+				if (amountOfItems < 1) {
+					utils.sendMessageGG(player, "Can't sign off on an empty request!");
+					return true;
+				}
 				refunds.signRefund(refundId);
 				utils.sendMessageGG(player, "Thank you for confirming refund request #" + refundId.toString());
 				utils.notifyOnlineAdminsGB(player.getName().toLowerCase() + " has signed off on refund id " + refundId.toString());

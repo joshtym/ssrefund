@@ -7,6 +7,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.serendipitymc.refund.korik.SubCommandExecutor;
+import com.serendipitymc.refund.korik.Utils;
 import com.serendipitymc.refund.managers.RefundHandler;
 import com.serendipitymc.refund.refund.refund;
 import com.serendipitymc.refund.util.SSUtil;
@@ -31,7 +32,7 @@ public class refundCommand extends SubCommandExecutor {
     }
     
     
-	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.create"}, usage = "/refund create <playername>", description = "Creates refund request for the user")
+	@command(minimumArgsLength = 2, permissions = {"ssrefund.create"}, usage = "/refund create <playername> <brief explanation>", description = "Creates refund request for the user")
 	public void create (CommandSender sender, String[] args) {
 		try {
 			util = plugin.getUtil();
@@ -39,6 +40,7 @@ public class refundCommand extends SubCommandExecutor {
 			String submitter;
 			boolean realPlayer = false;
 			Integer refundAmount = 0;
+			String comment = Utils.join(args, " ", 1);
 		
 			if(sender instanceof Player) {
 				submitter = sender.getName().toString().toLowerCase();
@@ -54,7 +56,7 @@ public class refundCommand extends SubCommandExecutor {
 				return;
 			}
 
-			refunds.createRefund(submitter, args[0].toLowerCase(), date);
+			refunds.createRefund(submitter, args[0].toLowerCase(), date, comment);
 			util.notifyIfOnline(args[0].toLowerCase(), submitter);
 			util.sendNotificationMessage(plugin, sender, realPlayer, "Created refund request successfully for: " + args[0].toLowerCase());
 		} catch (Exception e) {
@@ -93,7 +95,6 @@ public class refundCommand extends SubCommandExecutor {
 					util.sendMessageGG((Player) sender, "id needs to be a numeric");
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
 				sender.sendMessage("Something went horribly wrong. Please quote error ssr105");
 			}
 		}
@@ -106,7 +107,7 @@ public class refundCommand extends SubCommandExecutor {
 		if (sender instanceof Player) {
 			try {
 				if (util.isNumeric(args[0])) {
-					refunds.denyRefundId(Integer.parseInt(args[0]));
+					refunds.denyRefundId(Integer.parseInt(args[0]), sender.getName().toLowerCase());
 					sender.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + "Successfully denied refund # " + args[0]);
 				} else {
 					util.sendMessageGG((Player) sender, "id needs to be a numeric");
@@ -118,13 +119,13 @@ public class refundCommand extends SubCommandExecutor {
 		}
 	
 	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.execute"}, usage = "/refund approve <id>", description = "Approves a refund request")
-	public void execute(CommandSender sender, String[] args) {
+	public void approve(CommandSender sender, String[] args) {
 		util = plugin.getUtil();
 		refunds = plugin.getRH();
 		if (sender instanceof Player) {
 			try {
 				if (util.isNumeric(args[0])) {
-					//refunds.denyRefundId(Integer.parseInt(args[0]));
+					refunds.approveRefundId(Integer.parseInt(args[0]), sender.getName().toLowerCase());
 					sender.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + "Successfully approved/executed refund # " + args[0]);
 				} else {
 					util.sendMessageGG((Player) sender, "id needs to be a numeric");
@@ -142,7 +143,6 @@ public class refundCommand extends SubCommandExecutor {
 		if (sender instanceof Player) {
 			try {
 				if (util.isNumeric(args[0])) {
-					//refunds.denyRefundId(Integer.parseInt(args[0]));
 					refunds.testExecute(Integer.parseInt(args[0]), sender.getName().toLowerCase());
 					sender.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + "Successfully tested refund # " + args[0]);
 				} else {

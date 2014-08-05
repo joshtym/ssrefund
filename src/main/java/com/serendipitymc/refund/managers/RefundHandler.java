@@ -7,8 +7,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -49,7 +51,7 @@ public class RefundHandler {
 			String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 			connection = DriverManager.getConnection("jdbc:mysql://" + hostname, username, password);
 			Statement sh = connection.createStatement();
-			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefund + "(refund_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, opened_by VARCHAR(128) NOT NULL, player VARCHAR(128) NOT NULL, status ENUM('open', 'in progress', 'approved', 'signed off', 'executed', 'denied') DEFAULT 'open', final_decision_by VARCHAR(128), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, KEY idx_player(player), KEY idx_opened_by(opened_by), KEY idx_status(status)) Engine=InnoDB;");
+			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefund + "(refund_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, opened_by VARCHAR(128) NOT NULL, player VARCHAR(128) NOT NULL, status ENUM('open', 'in progress', 'approved', 'signed off', 'executed', 'denied') DEFAULT 'open', final_decision_by VARCHAR(128), comment VARCHAR(256), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, KEY idx_player(player), KEY idx_opened_by(opened_by), KEY idx_status(status)) Engine=InnoDB;");
 			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefundDetail + "(detail_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, refund_id INT UNSIGNED NOT NULL, amount INT UNSIGNED NOT NULL, amount_refunded INT UNSIGNED NOT NULL DEFAULT 0, item_id INT UNSIGNED NOT NULL, item_meta INT UNSIGNED NOT NULL, KEY idx_lookup(refund_id, detail_id)) Engine=InnoDB;");
 			connCleanup();
 			return connection;
@@ -72,14 +74,15 @@ public class RefundHandler {
         }, 3L);
 	}
 	
-	public boolean createRefund(String submitter, String beneficiary, Timestamp date) throws SQLException {
+	public boolean createRefund(String submitter, String beneficiary, Timestamp date, String comment) throws SQLException {
 		Connection conn = establishConnection();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
-		PreparedStatement ps = conn.prepareStatement("INSERT INTO " + thRefund + "(opened_by, player, created_at, updated_at) VALUES (?,?,?,?)");
+		PreparedStatement ps = conn.prepareStatement("INSERT INTO " + thRefund + "(opened_by, player, created_at, updated_at, comment) VALUES (?,?,?,?,?)");
 		ps.setString(1, submitter);
 		ps.setString(2, beneficiary);
 		ps.setTimestamp(3, date);
 		ps.setTimestamp(4, date);
+		ps.setString(5,  comment);
 		ps.execute();
 		ps.close();
 		return true;
@@ -140,6 +143,19 @@ public class RefundHandler {
 		return;
 	}
 	
+	public Integer getItemCount(Integer refundId) throws SQLException {
+		Connection conn = establishConnection();
+		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
+		Statement sh = conn.createStatement();
+		ResultSet rs = sh.executeQuery("SELECT SUM(amount) FROM " + thRefundDetail + " WHERE refund_id = " + refundId);
+		int refundRequests = 0;
+		while (rs.next()) {
+			refundRequests = rs.getInt(1);
+		}
+		rs.close();
+		return refundRequests;
+	}
+	
 	public void listPendingApprovals(Player staffmember) throws SQLException {
 		Connection conn = establishConnection();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
@@ -177,18 +193,36 @@ public class RefundHandler {
 		return;
 	}
 	
-	public void denyRefundId(Integer refundId) throws SQLException {
+	public void denyRefundId(Integer refundId, String staffmember) throws SQLException {
 		Connection conn = establishConnection();
 		SSUtil utils = plugin.getUtil();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
-		PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefund + " SET status = 'denied' WHERE refund_id = ?");
-		ps.setInt(1, refundId);
+		PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefund + " SET status = 'denied', final_decision_by = ?, updated_at = NOW() WHERE refund_id = ?");
+		ps.setString(1, staffmember);
+		ps.setInt(2, refundId);
 		ps.execute();
 		ps.close();
 		Statement sh = conn.createStatement();
 		ResultSet rs = sh.executeQuery("SELECT player FROM " + thRefund + " WHERE refund_id = " + refundId);
 		while (rs.next()) {
 			utils.sendDeniedMessage(rs.getString(1), "denied");
+		}
+		return;
+	}
+	
+	public void approveRefundId(Integer refundId, String staffmember) throws SQLException {
+		Connection conn = establishConnection();
+		SSUtil utils = plugin.getUtil();
+		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
+		PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefund + " SET status = 'approved', final_decision_by = ?, updated_at = NOW() WHERE refund_id = ?");
+		ps.setString(1, staffmember);
+		ps.setInt(2, refundId);
+		ps.execute();
+		ps.close();
+		Statement sh = conn.createStatement();
+		ResultSet rs = sh.executeQuery("SELECT player FROM " + thRefund + " WHERE refund_id = " + refundId);
+		while (rs.next()) {
+			utils.sendDeniedMessage(rs.getString(1), "approved");
 		}
 		return;
 	}
@@ -224,7 +258,6 @@ public class RefundHandler {
 							outofspace = true;
 							break;
 						} else {
-							System.out.println("int: " + Integer.parseInt(args[0]) + " meta: " + (short) Integer.parseInt(args[1]));
 							refundTo.getInventory().addItem(new ItemStack(material, 1, (short) Integer.parseInt(args[1])));
 							given++;
 						}
@@ -236,7 +269,66 @@ public class RefundHandler {
 	}
 	
 	public void executePendingRefund() throws SQLException {
+		Connection conn = establishConnection();
+		HashMap<String, Integer> toRefund = new HashMap<String, Integer>();
+		HashMap<String, Integer> refunds = new HashMap<String, Integer>();
+		List<Player> onlinePlayers = new ArrayList<Player>();
+		SSUtil util = plugin.getUtil();
+		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
+		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
+		Statement sh = conn.createStatement();
+		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player FROM " + thRefund + " r WHERE r.status = 'approved'");
+		while (rs.next()) {
+			refunds.put(rs.getString(2), rs.getInt(1));
+		}
+		rs.close();
+		onlinePlayers = util.getOnlinePlayers(refunds);
 		
+		for (Player player : onlinePlayers) {
+			sh = conn.createStatement();
+			rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, (rd.amount - rd.amount_refunded) AS remaining FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refunds.get(player.getName().toLowerCase()) + " AND (rd.amount - rd.amount_refunded) > 0");
+			while (rs.next()) {
+				toRefund.put(rs.getString(1) + ":" + rs.getString(2), rs.getInt(3));
+			}
+			rs.close();
+			Iterator<String> keySetIterator = toRefund.keySet().iterator();
+			boolean outofspace = false;
+			while(keySetIterator.hasNext() && !outofspace){
+				  String key = keySetIterator.next();
+				  String[] args = key.split(":");
+				  Material material = Material.matchMaterial(args[0]);
+					if (material != null) {
+						// We have a material, now let's see if there's room for it... todo: optimize these things
+						Integer given = 0;
+						while (given < toRefund.get(key)) {
+							Integer invSlot = player.getInventory().firstEmpty();
+							if (invSlot < 0) {
+								// No more empty slots, save what we've done and retry later
+								util.sendMessageGG(player, "You're out of inventory space. Pausing the refund. The system will automatically keep retrying until refund is complete");
+								outofspace = true;
+								break;
+							} else {
+								System.out.println("Aint: " + Integer.parseInt(args[0]) + " Ameta: " + (short) Integer.parseInt(args[1]));
+								player.getInventory().addItem(new ItemStack(material, 1, (short) Integer.parseInt(args[1])));
+								given++;
+							}
+						}
+						PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefundDetail + " SET amount_refunded = ? WHERE refund_id = ? AND item_id = ? AND item_meta = ?");
+						ps.setInt(1, given);
+						ps.setInt(2, refunds.get(player.getName().toLowerCase()));
+						ps.setInt(3, Integer.parseInt(args[0]));
+						ps.setInt(4, Integer.parseInt(args[1]));
+						ps.execute();
+						ps.close();
+					}
+			}
+			if (!outofspace) {
+				PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefund + " SET status = 'executed', updated_at = NOW() WHERE refund_id = ?");
+				ps.setInt(1, refunds.get(player.getName().toLowerCase()));
+				ps.execute();
+				ps.close();
+			}
+		}
 	}
 	
 	public void sendSummary(Player staffmember, String message) {
