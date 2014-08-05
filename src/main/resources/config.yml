@@ -1,4 +1,3 @@
-max-pending-refunds: 1
 tz: GMT
 tf: 'HH:mm'
 notify-time: 10

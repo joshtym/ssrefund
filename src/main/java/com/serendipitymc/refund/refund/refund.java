@@ -3,6 +3,7 @@ package com.serendipitymc.refund.refund;
 
 import java.io.File;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
@@ -45,7 +46,8 @@ public class refund extends JavaPlugin{
 			 public void run() {
 				 System.out.println("Checking for any pending approved refunds");
 				 try {
-					 refundHandler.executePendingRefund();
+					 String server = Bukkit.getServerName();
+					 refundHandler.executePendingRefund(server);
 				 } catch (Exception e) {
 					 // Caught an exception
 					 e.printStackTrace();

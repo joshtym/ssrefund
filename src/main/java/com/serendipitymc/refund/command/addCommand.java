@@ -1,5 +1,6 @@
 package com.serendipitymc.refund.command;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -28,7 +29,8 @@ public class addCommand  implements CommandExecutor {
 			refunds = plugin.getRH();
 			utils = plugin.getUtil();
 			try {
-				Integer refundAmount = refunds.countRefunds(sender.getName().toString().toLowerCase());
+				String server = Bukkit.getServerName();
+				Integer refundAmount = refunds.countRefunds(sender.getName().toString().toLowerCase(), server);
 				if (!(refundAmount.equals(1))) {
 					utils.sendMessageGG((Player) sender, "I can't find an active refund request for you");
 					return true;
@@ -93,7 +95,8 @@ public class addCommand  implements CommandExecutor {
 		if (material != null) {
 			// playerobject.getInventory().addItem(new ItemStack(material, quantity, metaid)); // To be removed
 			try {
-				Integer refundId = refunds.getLatestRefundId(playerobject.getName().toLowerCase());
+				String server = Bukkit.getServerName();
+				Integer refundId = refunds.getLatestRefundId(playerobject.getName().toLowerCase(), server);
 				refunds.addRefund(playerobject.getName().toLowerCase(), quantity, itemid, metaid, refundId);
 			} catch (Exception e) {
 				e.printStackTrace();

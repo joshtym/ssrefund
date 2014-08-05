@@ -1,5 +1,6 @@
 package com.serendipitymc.refund.command;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -27,12 +28,13 @@ public class signCommand implements CommandExecutor {
 			utils = plugin.getUtil();
 			Player player = (Player) sender;
 			try {
-				Integer refundAmount = refunds.countRefunds(sender.getName().toString().toLowerCase());
+				String server = Bukkit.getServerName();
+				Integer refundAmount = refunds.countRefunds(sender.getName().toString().toLowerCase(), server);
 				if (!(refundAmount.equals(1))) {
 					utils.sendMessageGG((Player) sender, "I can't find an active refund request for you");
 					return true;
 				}
-				Integer refundId = refunds.getLatestRefundId(player.getName().toLowerCase());
+				Integer refundId = refunds.getLatestRefundId(player.getName().toLowerCase(), server);
 				Integer amountOfItems = refunds.getItemCount(refundId);
 				if (amountOfItems < 1) {
 					utils.sendMessageGG(player, "Can't sign off on an empty request!");

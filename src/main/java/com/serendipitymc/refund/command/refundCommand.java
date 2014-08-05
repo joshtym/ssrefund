@@ -2,6 +2,7 @@ package com.serendipitymc.refund.command;
 
 import java.sql.Timestamp;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -49,14 +50,14 @@ public class refundCommand extends SubCommandExecutor {
 				submitter = "console";
 			}
 			Timestamp date = new Timestamp(System.currentTimeMillis());
-		
-			refundAmount = refunds.countRefunds(args[0]);
+			String server = Bukkit.getServerName();
+			refundAmount = refunds.countRefunds(args[0], server);
 			if (refundAmount >= 1) {
 				util.sendNotificationMessage(plugin, sender, realPlayer, "This user has too many pending refund requests");
 				return;
 			}
 
-			refunds.createRefund(submitter, args[0].toLowerCase(), date, comment);
+			refunds.createRefund(submitter, args[0].toLowerCase(), date, comment, server);
 			util.notifyIfOnline(args[0].toLowerCase(), submitter);
 			util.sendNotificationMessage(plugin, sender, realPlayer, "Created refund request successfully for: " + args[0].toLowerCase());
 		} catch (Exception e) {

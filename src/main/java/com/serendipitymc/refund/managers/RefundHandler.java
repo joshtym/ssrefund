@@ -51,7 +51,7 @@ public class RefundHandler {
 			String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 			connection = DriverManager.getConnection("jdbc:mysql://" + hostname, username, password);
 			Statement sh = connection.createStatement();
-			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefund + "(refund_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, opened_by VARCHAR(128) NOT NULL, player VARCHAR(128) NOT NULL, status ENUM('open', 'in progress', 'approved', 'signed off', 'executed', 'denied') DEFAULT 'open', final_decision_by VARCHAR(128), comment VARCHAR(256), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, KEY idx_player(player), KEY idx_opened_by(opened_by), KEY idx_status(status)) Engine=InnoDB;");
+			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefund + "(refund_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, opened_by VARCHAR(128) NOT NULL, player VARCHAR(128) NOT NULL, status ENUM('open', 'in progress', 'approved', 'signed off', 'executed', 'denied') DEFAULT 'open', final_decision_by VARCHAR(128), comment VARCHAR(256), servername VARCHAR(128), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, KEY idx_player(player), KEY idx_opened_by(opened_by), KEY idx_status(status), KEY idx_server(servername)) Engine=InnoDB;");
 			sh.execute("CREATE TABLE IF NOT EXISTS " + thRefundDetail + "(detail_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, refund_id INT UNSIGNED NOT NULL, amount INT UNSIGNED NOT NULL, amount_refunded INT UNSIGNED NOT NULL DEFAULT 0, item_id INT UNSIGNED NOT NULL, item_meta INT UNSIGNED NOT NULL, KEY idx_lookup(refund_id, detail_id)) Engine=InnoDB;");
 			connCleanup();
 			return connection;
@@ -74,25 +74,26 @@ public class RefundHandler {
         }, 3L);
 	}
 	
-	public boolean createRefund(String submitter, String beneficiary, Timestamp date, String comment) throws SQLException {
+	public boolean createRefund(String submitter, String beneficiary, Timestamp date, String comment, String servername) throws SQLException {
 		Connection conn = establishConnection();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
-		PreparedStatement ps = conn.prepareStatement("INSERT INTO " + thRefund + "(opened_by, player, created_at, updated_at, comment) VALUES (?,?,?,?,?)");
+		PreparedStatement ps = conn.prepareStatement("INSERT INTO " + thRefund + "(opened_by, player, created_at, updated_at, comment, servername) VALUES (?,?,?,?,?,?)");
 		ps.setString(1, submitter);
 		ps.setString(2, beneficiary);
 		ps.setTimestamp(3, date);
 		ps.setTimestamp(4, date);
-		ps.setString(5,  comment);
+		ps.setString(5, comment);
+		ps.setString(6, servername);
 		ps.execute();
 		ps.close();
 		return true;
 	}
 	
-	public int countRefunds(String beneficiary) throws SQLException {
+	public int countRefunds(String beneficiary, String servername) throws SQLException {
 		Connection conn = establishConnection();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT COUNT(1) FROM " + thRefund + " WHERE player = '" + beneficiary + "' AND status IN ('open', 'in progress')");
+		ResultSet rs = sh.executeQuery("SELECT COUNT(1) FROM " + thRefund + " WHERE player = '" + beneficiary + "' AND status IN ('open', 'in progress') AND servername = '" + servername + "'");
 		int refundRequests = 0;
 		while (rs.next()) {
 			refundRequests = rs.getInt(1);
@@ -101,11 +102,11 @@ public class RefundHandler {
 		return refundRequests;
 	}
 	
-	public int getLatestRefundId(String player) throws SQLException {
+	public int getLatestRefundId(String player, String servername) throws SQLException {
 		Connection conn = establishConnection();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT refund_id FROM " + thRefund + " WHERE player = '" + player + "' AND status IN ('open', 'in progress')");
+		ResultSet rs = sh.executeQuery("SELECT refund_id FROM " + thRefund + " WHERE player = '" + player + "' AND status IN ('open', 'in progress') AND servername = '" + servername + "'");
 		int refundRequests = 0;
 		while (rs.next()) {
 			refundRequests = rs.getInt(1);
@@ -161,9 +162,9 @@ public class RefundHandler {
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount) FROM " + thRefund + " r INNER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.status IN ('open', 'in progress', 'signed off') GROUP BY 1");
+		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount), r.servername FROM " + thRefund + " r LEFT OUTER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.status IN ('open', 'in progress', 'signed off') GROUP BY 1");
 		staffmember.sendMessage(ChatColor.GOLD + "-----List-of-pending-refunds------");
-		staffmember.sendMessage(ChatColor.GOLD + "ID , Player , OpenedBy , Unique Items , Total items , Status, Created At");
+		staffmember.sendMessage(ChatColor.GOLD + "ID , Player , OpenedBy , Unique Items , Total items , Status, Created At, Server");
 		while (rs.next()) {
 			String message = "#" + rs.getInt(1);
 			message = message + ", " + rs.getString(2);
@@ -172,6 +173,7 @@ public class RefundHandler {
 			message = message + ", " + rs.getInt(7);
 			message = message + ", " + rs.getString(3);
 			message = message + ", " + rs.getString(4);
+			message = message + ", " + rs.getString(8);
 			sendSummary(staffmember, message);
  		}
 		staffmember.sendMessage(ChatColor.GOLD + "-----End-of-pending-refunds------");
@@ -181,10 +183,17 @@ public class RefundHandler {
 	
 	public void getRefundDetailById(Player staffmember, Integer refundId) throws SQLException {
 		Connection conn = establishConnection();
+		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
 		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId);
+		Statement sh2 = conn.createStatement();
+		ResultSet rs2 = sh2.executeQuery("SELECT comment FROM " + thRefund + " WHERE refund_id = " + refundId);
 		staffmember.sendMessage(ChatColor.GOLD + "-----Details-for-ID-" + refundId + "------");
+		while (rs2.next()) {
+			staffmember.sendMessage(ChatColor.DARK_GREEN + "Opening comment: " + ChatColor.GRAY + rs2.getString(1));
+		}
+		rs2.close();
 		while (rs.next()) {
 			staffmember.sendMessage(ChatColor.GRAY + "item:meta: " + ChatColor.WHITE + rs.getInt(1) + ":" + rs.getInt(2) + ChatColor.GRAY + ", amount: " + ChatColor.WHITE + rs.getInt(3));
 		}
@@ -268,7 +277,7 @@ public class RefundHandler {
 		}
 	}
 	
-	public void executePendingRefund() throws SQLException {
+	public void executePendingRefund(String servername) throws SQLException {
 		Connection conn = establishConnection();
 		HashMap<String, Integer> toRefund = new HashMap<String, Integer>();
 		HashMap<String, Integer> refunds = new HashMap<String, Integer>();
@@ -277,7 +286,7 @@ public class RefundHandler {
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player FROM " + thRefund + " r WHERE r.status = 'approved'");
+		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player FROM " + thRefund + " r WHERE r.status = 'approved' AND r.servername = '" + servername + "'");
 		while (rs.next()) {
 			refunds.put(rs.getString(2), rs.getInt(1));
 		}
