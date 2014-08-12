@@ -138,7 +138,6 @@ public class RefundHandler {
 	public void signRefund(Integer refundId) throws SQLException {
 		Connection conn = establishConnection();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
-		Statement sh = conn.createStatement();
 		PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefund + " SET status = 'signed off', updated_at = NOW() WHERE refund_id = ?");
 		ps.setInt(1, refundId);
 		ps.execute();
@@ -319,7 +318,6 @@ public class RefundHandler {
 								outofspace = true;
 								break;
 							} else {
-								System.out.println("Aint: " + Integer.parseInt(args[0]) + " Ameta: " + (short) Integer.parseInt(args[1]));
 								player.getInventory().addItem(new ItemStack(material, 1, (short) Integer.parseInt(args[1])));
 								given++;
 							}

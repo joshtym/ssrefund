@@ -39,7 +39,14 @@ public class refund extends JavaPlugin{
         pm.registerEvents(new RefundListener(this), this);
 
         PluginDescriptionFile pdfFile = this.getDescription();
-        // 20 ticks per second - let's do every 2 minutes
+        // every 2 minutes by default, new config added
+        Integer updateInterval = 0;
+		 if (plugin.getConfig().getString("update-interval") == null) {
+			 updateInterval = 2400;
+		 } else {
+			 updateInterval = Integer.parseInt(plugin.getConfig().getString("update-interval"));
+		 }
+		 
         new BukkitRunnable() {
 			 public void run() {
 				 try {
@@ -50,7 +57,7 @@ public class refund extends JavaPlugin{
 					 e.printStackTrace();
 				 }
 			 }
-		 }.runTaskTimer(this, 20, 2400);
+		 }.runTaskTimer(this, 20, updateInterval);
 		 
 		 
 	}
