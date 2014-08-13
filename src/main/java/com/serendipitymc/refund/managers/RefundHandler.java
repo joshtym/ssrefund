@@ -224,7 +224,7 @@ public class RefundHandler {
 		Connection conn = establishConnection();
 		SSUtil utils = plugin.getUtil();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
-		PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefund + " SET status = 'approved', final_decision_by = ?, updated_at = NOW() WHERE refund_id = ?");
+		PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefund + " SET status = 'approved', final_decision_by = ?, updated_at = NOW() WHERE refund_id = ? AND status NOT IN ('executed', 'denied')");
 		ps.setString(1, staffmember);
 		ps.setInt(2, refundId);
 		ps.execute();
@@ -310,7 +310,7 @@ public class RefundHandler {
 					if (material != null) {
 						// We have a material, now let's see if there's room for it... todo: optimize these things
 						Integer given = 0;
-						while (given < toRefund.get(key)) {
+						while (given < toRefund.get(key) && !outofspace) {
 							Integer invSlot = player.getInventory().firstEmpty();
 							if (invSlot < 0) {
 								// No more empty slots, save what we've done and retry later
