@@ -187,16 +187,17 @@ public class RefundHandler {
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId);
+		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount, rd.amount_refunded FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId);
 		Statement sh2 = conn.createStatement();
-		ResultSet rs2 = sh2.executeQuery("SELECT comment FROM " + thRefund + " WHERE refund_id = " + refundId);
+		ResultSet rs2 = sh2.executeQuery("SELECT comment, status FROM " + thRefund + " WHERE refund_id = " + refundId);
 		staffmember.sendMessage(ChatColor.GOLD + "-----Details-for-ID-" + refundId + "------");
 		while (rs2.next()) {
+			staffmember.sendMessage(ChatColor.DARK_GREEN + "Status: " + ChatColor.GRAY + rs2.getString(2));
 			staffmember.sendMessage(ChatColor.DARK_GREEN + "Opening comment: " + ChatColor.GRAY + rs2.getString(1));
 		}
 		rs2.close();
 		while (rs.next()) {
-			staffmember.sendMessage(ChatColor.GRAY + "item:meta: " + ChatColor.WHITE + rs.getInt(1) + ":" + rs.getInt(2) + ChatColor.GRAY + ", amount: " + ChatColor.WHITE + rs.getInt(3));
+			staffmember.sendMessage(ChatColor.GRAY + "item:meta: " + ChatColor.WHITE + rs.getInt(1) + ":" + rs.getInt(2) + ChatColor.GRAY + ", amount: " + ChatColor.WHITE + rs.getInt(3) + ChatColor.GRAY + ", refunded: " + ChatColor.WHITE + rs.getInt(4));
 		}
 		staffmember.sendMessage(ChatColor.GOLD + "------End-of-details------");
 		rs.close();
