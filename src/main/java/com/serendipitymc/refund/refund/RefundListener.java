@@ -28,7 +28,7 @@ public class RefundListener implements Listener{
                     RefundHandler rh = new RefundHandler();
                     int executableRefunds = rh.getExecutableAmount();
                     if (executableRefunds > 0) {
-                        p.sendMessage(ChatColor.GOLD + "[SSRefund]" + ChatColor.LIGHT_PURPLE + " There is " + ChatColor.RED + Integer.toString(executableRefunds) + ChatColor.LIGHT_PURPLE + " refunds ready to be executed");
+                        p.sendMessage(ChatColor.GOLD + "[SSRefund]" + ChatColor.LIGHT_PURPLE + " There are " + ChatColor.RED + Integer.toString(executableRefunds) + ChatColor.LIGHT_PURPLE + " refunds ready to be executed");
                     }
                 	} catch (Exception e) {
                 		p.sendMessage(ChatColor.GOLD + "[SSRefund] " + ChatColor.LIGHT_PURPLE + "Something went wrong. Please report error ssr201");
