@@ -323,7 +323,9 @@ public class RefundHandler {
 								given++;
 							}
 						}
-						PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefundDetail + " SET amount_refunded = ? WHERE refund_id = ? AND item_id = ? AND item_meta = ?");
+						// debug
+						//util.sendMessageGG(player, "before update");
+						PreparedStatement ps = conn.prepareStatement("UPDATE " + thRefundDetail + " SET amount_refunded = amount_refunded + ? WHERE refund_id = ? AND item_id = ? AND item_meta = ?");
 						ps.setInt(1, given);
 						ps.setInt(2, refunds.get(player.getName().toLowerCase()));
 						ps.setInt(3, Integer.parseInt(args[0]));
