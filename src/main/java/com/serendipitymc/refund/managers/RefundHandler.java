@@ -189,11 +189,13 @@ public class RefundHandler {
 		Statement sh = conn.createStatement();
 		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount, rd.amount_refunded FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId);
 		Statement sh2 = conn.createStatement();
-		ResultSet rs2 = sh2.executeQuery("SELECT comment, status FROM " + thRefund + " WHERE refund_id = " + refundId);
+		ResultSet rs2 = sh2.executeQuery("SELECT comment, status, opened_by, player FROM " + thRefund + " WHERE refund_id = " + refundId);
 		staffmember.sendMessage(ChatColor.GOLD + "-----Details-for-ID-" + refundId + "------");
 		while (rs2.next()) {
 			staffmember.sendMessage(ChatColor.DARK_GREEN + "Status: " + ChatColor.GRAY + rs2.getString(2));
 			staffmember.sendMessage(ChatColor.DARK_GREEN + "Opening comment: " + ChatColor.GRAY + rs2.getString(1));
+			staffmember.sendMessage(ChatColor.DARK_GREEN + "Opened by: " + ChatColor.GRAY + rs2.getString(3));
+			staffmember.sendMessage(ChatColor.DARK_GREEN + "Player: " + ChatColor.GRAY + rs2.getString(4));
 		}
 		rs2.close();
 		while (rs.next()) {
