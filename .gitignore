@@ -18,6 +18,8 @@ local.properties
 
 /bin
 /target/
+.target*
+target/*
 
 # External tool builders
 .externalToolBuilders/
