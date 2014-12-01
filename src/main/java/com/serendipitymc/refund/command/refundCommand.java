@@ -71,27 +71,39 @@ public class refundCommand extends SubCommandExecutor {
 		}
 	}
 	
-	@command(maximumArgsLength = 0, minimumArgsLength = 0, permissions = {"ssrefund.list"}, usage = "/refund list", description = "Shows pending refunds")
+	@command(maximumArgsLength = 1, minimumArgsLength = 0, permissions = {"ssrefund.list"}, usage = "/refund list <page>", description = "Shows pending refunds")
 	public void list(CommandSender sender, String[] args) {
 		util = plugin.getUtil();
 		refunds = plugin.getRH();
+		int page = 1;
+        if (args.length == 1) {
+            page = java.lang.Integer.parseInt(args[0]);
+        }
 		if (sender instanceof Player) {
 			try {
-				refunds.listPendingApprovals((Player) sender);
+				refunds.listPendingApprovals((Player) sender, page);
 			} catch (Exception e) {
 				sender.sendMessage("Something went horribly wrong. Please quote error ssr104");
 			}
 		}
 	}
 	
-	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.list"}, usage = "/refund detail <id>", description = "Shows the full refund detail")
+	@command(maximumArgsLength = 2, minimumArgsLength = 1, permissions = {"ssrefund.list"}, usage = "/refund detail <id>", description = "Shows the full refund detail")
 	public void detail(CommandSender sender, String[] args) {
 		util = plugin.getUtil();
 		refunds = plugin.getRH();
+		int page = 1;
+        if (args.length == 2) {
+        	if (util.isNumeric(args[1])) {
+        		page = java.lang.Integer.parseInt(args[1]);
+        	} else {
+        		page = 1;
+        	}
+        }
 		if (sender instanceof Player) {
 			try {
 				if (util.isNumeric(args[0])) {
-					refunds.getRefundDetailById((Player) sender, Integer.parseInt(args[0]));
+					refunds.getRefundDetailById((Player) sender, Integer.parseInt(args[0]), page);
 				} else {
 					util.sendMessageGG((Player) sender, "id needs to be a numeric");
 				}
@@ -101,6 +113,18 @@ public class refundCommand extends SubCommandExecutor {
 		}
 	}
 	
+	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.list"}, usage = "/refund history <player>", description = "Show refund history for a given playername")
+	public void history(CommandSender sender, String[] args) {
+		util = plugin.getUtil();
+		refunds = plugin.getRH();
+		if (sender instanceof Player) {
+			try {
+				refunds.showPlayerHistoryBrief((Player) sender, args[0]);
+			} catch (Exception e) {
+				sender.sendMessage("Something went wrong. Please report error ssr109");
+			}
+		}
+	}
 	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.deny"}, usage = "/refund deny <id>", description = "Denies a refund request")
 	public void deny(CommandSender sender, String[] args) {
 		util = plugin.getUtil();
