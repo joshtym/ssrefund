@@ -88,7 +88,7 @@ public class refundCommand extends SubCommandExecutor {
 		}
 	}
 	
-	@command(maximumArgsLength = 2, minimumArgsLength = 1, permissions = {"ssrefund.list"}, usage = "/refund detail <id>", description = "Shows the full refund detail")
+	@command(maximumArgsLength = 2, minimumArgsLength = 1, permissions = {"ssrefund.list"}, usage = "/refund detail <id> <page>", description = "Shows the full refund detail")
 	public void detail(CommandSender sender, String[] args) {
 		util = plugin.getUtil();
 		refunds = plugin.getRH();
