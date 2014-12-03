@@ -187,6 +187,7 @@ public class RefundHandler {
 	
 	public void showPlayerHistoryBrief(Player staffmember, String player) throws SQLException {
 		Connection conn = establishConnection();
+		util = plugin.getUtil();
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
@@ -201,8 +202,10 @@ public class RefundHandler {
 			message = message + ", " + rs.getString(3);
 			message = message + ", " + rs.getString(4);
 			message = message + ", " + rs.getString(8);
-			sendSummary(staffmember, message);
+			if (rs.getInt(1) != 0)
+				sendSummary(staffmember, message);
 		}
+		rs.close();
 	}
 	
 	public void getRefundDetailById(Player staffmember, Integer refundId, int page) throws SQLException {
@@ -212,9 +215,9 @@ public class RefundHandler {
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount, rd.amount_refunded FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId);
+		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount, rd.amount_refunded FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId + " ORDER BY rd.item_id DESC LIMIT " + number);
 		Statement sh2 = conn.createStatement();
-		ResultSet rs2 = sh2.executeQuery("SELECT comment, status, opened_by, player FROM " + thRefund + " WHERE refund_id = " + refundId + " ORDER BY rd.item_id DESC LIMIT " + number);
+		ResultSet rs2 = sh2.executeQuery("SELECT comment, status, opened_by, player FROM " + thRefund + " WHERE refund_id = " + refundId);
 		staffmember.sendMessage(ChatColor.GOLD + "-----Details-for-ID-" + refundId + "------");
 		while (rs2.next()) {
 			staffmember.sendMessage(ChatColor.DARK_GREEN + "Status: " + ChatColor.GRAY + rs2.getString(2));

@@ -1,5 +1,7 @@
 package com.serendipitymc.refund.command;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Timestamp;
 
 import org.bukkit.Bukkit;
@@ -87,6 +89,14 @@ public class refundCommand extends SubCommandExecutor {
 			}
 		}
 	}
+	/* 
+	// Only for testing
+	@command(maximumArgsLength = 1, minimumArgsLength = 0, permissions = {"ssrefund.list"}, usage = "/refund offline <user>", description = "Shows offline person")
+	public void offline(CommandSender sender, String[] args) {
+		System.out.println("Running:");
+		System.out.println(Bukkit.getOfflinePlayer(args[0]).getName());
+	}
+	*/
 	
 	@command(maximumArgsLength = 2, minimumArgsLength = 1, permissions = {"ssrefund.list"}, usage = "/refund detail <id> <page>", description = "Shows the full refund detail")
 	public void detail(CommandSender sender, String[] args) {
