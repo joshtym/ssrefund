@@ -162,10 +162,11 @@ public class RefundHandler {
 	public void listPendingApprovals(Player staffmember, int page) throws SQLException {
 		Connection conn = establishConnection();
 		int nmbr = page * 10;
+		int lowNumber = nmbr - 10;
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount), r.servername FROM " + thRefund + " r LEFT OUTER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.status IN ('open', 'in progress', 'signed off') GROUP BY 1 ORDER BY r.refund_id ASC LIMIT "+ nmbr);
+		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount), r.servername FROM " + thRefund + " r LEFT OUTER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.status IN ('open', 'in progress', 'signed off') GROUP BY 1 ORDER BY r.refund_id ASC LIMIT "+ lowNumber + ", 10");
 		staffmember.sendMessage(ChatColor.GOLD + "-----List-of-pending-refunds------");
 		staffmember.sendMessage(ChatColor.GOLD + "ID , Player , OpenedBy , Unique Items , Total items , Status, Created At, Server");
 		while (rs.next()) {
@@ -212,10 +213,11 @@ public class RefundHandler {
 		Connection conn = establishConnection();
 		util = plugin.getUtil();
 		int number = page * 10;
+		int lowNumber = number - 10;
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount, rd.amount_refunded FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId + " ORDER BY rd.item_id DESC LIMIT " + number);
+		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount, rd.amount_refunded FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId + " ORDER BY rd.item_id DESC LIMIT " + lowNumber + ", 10");
 		Statement sh2 = conn.createStatement();
 		ResultSet rs2 = sh2.executeQuery("SELECT comment, status, opened_by, player FROM " + thRefund + " WHERE refund_id = " + refundId);
 		staffmember.sendMessage(ChatColor.GOLD + "-----Details-for-ID-" + refundId + "------");
