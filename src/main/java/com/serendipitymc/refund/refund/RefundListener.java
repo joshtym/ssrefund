@@ -8,10 +8,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import com.serendipitymc.refund.managers.RefundHandler;
+import com.serendipitymc.refund.util.SSUtil;
 
 public class RefundListener implements Listener{
 
 	private refund plugin;
+	private SSUtil util;
 
     public RefundListener(refund instance) {
         plugin = instance;
@@ -37,6 +39,25 @@ public class RefundListener implements Listener{
                 }
             }, 60L);
         }
+        
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin,
+        		new Runnable() {
+        	public void run() {
+        		try {
+        			util = plugin.getUtil();
+        			RefundHandler rh = new RefundHandler();
+        			String server = Bukkit.getServerName();
+        			int pending = rh.pendingRefundsForPlayer(p.getName().toLowerCase(), server);
+        			if (pending > 0) {
+        				util.sendMessageGG(p, "You have non-completed refund(s) pending your action"); 
+        			}
+        		} catch (Exception e) {
+        			if (p.hasPermission("refund.execute")) {
+        				p.sendMessage(ChatColor.GOLD + "[SSRefund] " + ChatColor.LIGHT_PURPLE + "Something went wrong. Please report error ssr202");
+        			}
+        		}
+        	}
+        }, 60L);
     }
 	
 	

@@ -379,4 +379,18 @@ public class RefundHandler {
 	public void sendSummary(Player staffmember, String message) {
 		staffmember.sendMessage(ChatColor.GOLD + "-" + ChatColor.AQUA + message);
 	}
+
+	public int pendingRefundsForPlayer(String player, String server) throws SQLException {
+		Connection conn = establishConnection();
+		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
+		Statement sh = conn.createStatement();
+		int returnInt = 0;
+		ResultSet rs = sh.executeQuery("SELECT COUNT(1) FROM " + thRefund + " WHERE player ='" + player + "' AND status IN ('open', 'in progress') AND servername = '" +server+"'");
+		while (rs.next()) {
+			if (rs.getInt(1) > returnInt)
+				returnInt = rs.getInt(1);
+		}
+		conn.close();
+		return returnInt;
+	}
 }
