@@ -1,0 +1,4 @@
+- Revamp commands
+- Add in UUID support
+- Convert database command for the UUID support
+- Clean up code
