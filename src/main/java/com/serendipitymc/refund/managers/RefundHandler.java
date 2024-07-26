@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -159,21 +161,27 @@ public class RefundHandler {
 		return refundRequests;
 	}
 	
-	public void listPendingApprovals(Player staffmember, int page) throws SQLException {
+	public void listPendingApprovals(Player staffmember, int page, boolean listAll) throws SQLException {
 		Connection conn = establishConnection();
 		int nmbr = page * 10;
 		int lowNumber = nmbr - 10;
 		String thRefund = plugin.getConfig().getString("mysql.tables.refunds");
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
+		String serverName = Bukkit.getServerName();
 		Statement sh = conn.createStatement();
-		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount), r.servername FROM " + thRefund + " r LEFT OUTER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.status IN ('open', 'in progress', 'signed off') GROUP BY 1 ORDER BY r.refund_id ASC LIMIT "+ lowNumber + ", 10");
+		ResultSet rs;
+		
+		if (!(listAll))
+			rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount), r.comment FROM " + thRefund + " r LEFT OUTER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.servername = '" + serverName + "' AND r.status IN ('open', 'in progress', 'signed off') GROUP BY 1 ORDER BY r.refund_id ASC LIMIT "+ lowNumber + ", 10");
+		else
+			rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount), r.servername FROM " + thRefund + " r LEFT OUTER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.status IN ('open', 'in progress', 'signed off') GROUP BY 1 ORDER BY r.refund_id ASC LIMIT "+ lowNumber + ", 10");
+		
 		staffmember.sendMessage(ChatColor.GOLD + "-----List-of-pending-refunds------");
-		staffmember.sendMessage(ChatColor.GOLD + "ID , Player , OpenedBy , Unique Items , Total items , Status, Created At, Server");
 		
 		while (rs.next()) {
 			String finalMessage = "";
 			finalMessage = finalMessage + ChatColor.GOLD + "#" + rs.getInt(1) + " ";
-			finalMessage = finalMessage + ChatColor.DARK_GREEN + rs.getString(4) + " ";
+			finalMessage = finalMessage + ChatColor.DARK_GREEN + dateFormatter(rs.getString(4)) + " ";
 			finalMessage = finalMessage + "[" + rs.getInt(6) + "]" + " ";
 			
 			String statusVar = rs.getString(3);
@@ -181,8 +189,13 @@ public class RefundHandler {
 				finalMessage = finalMessage + ChatColor.GREEN + rs.getString(2) + " ";
 			else
 				finalMessage = finalMessage + ChatColor.RED + rs.getString(2) + " ";
-				
-			finalMessage = finalMessage + ChatColor.GRAY + rs.getString(8) + " ";
+			
+			String serverOrCommentLength = rs.getString(8);
+			if (serverOrCommentLength.length() > 15)
+				finalMessage = finalMessage + ChatColor.GRAY + rs.getString(8).substring(0,15) + "... ";
+			else
+				finalMessage = finalMessage + ChatColor.GRAY + rs.getString(8) + " ";
+			
 			finalMessage = finalMessage + ChatColor.RED + "[" + rs.getString(3) + "]";
       
 			sendSummary(staffmember, finalMessage);
@@ -201,16 +214,19 @@ public class RefundHandler {
 		ResultSet rs = sh.executeQuery("SELECT r.refund_id, r.player, r.status, r.created_at, r.opened_by, count(rd.detail_id), sum(rd.amount), r.servername FROM " + thRefund + " r LEFT OUTER JOIN " + thRefundDetail + " rd ON r.refund_id = rd.refund_id WHERE r.player = '"+player+"' ORDER BY r.refund_id DESC");
 		util.sendMessageGG(staffmember, "----Refund history for " + player + "----");
 		while (rs.next()) {
-			String message = "#" + rs.getInt(1);
-			message = message + ", " + rs.getString(2);
-			message = message + ", " + rs.getString(5);
-			message = message + ", " + rs.getInt(6);
-			message = message + ", " + rs.getInt(7);
-			message = message + ", " + rs.getString(3);
-			message = message + ", " + rs.getString(4);
-			message = message + ", " + rs.getString(8);
+			String finalMessage = "";
+			finalMessage = finalMessage + ChatColor.GOLD + "#" + rs.getInt(1) + " ";
+			finalMessage = finalMessage + ChatColor.DARK_GREEN + dateFormatter(rs.getString(4)) + " ";
+			finalMessage = finalMessage + "[" + rs.getInt(6) + "]" + " ";
+			
+			String statusVar = rs.getString(3);
+			finalMessage = finalMessage + ChatColor.RED + rs.getString(2) + " ";
+			finalMessage = finalMessage + ChatColor.GRAY + rs.getString(8) + " ";
+			
+			finalMessage = finalMessage + ChatColor.RED + "[" + rs.getString(3) + "]";
+			
 			if (rs.getInt(1) != 0)
-				sendSummary(staffmember, message);
+				sendSummary(staffmember, finalMessage);
 		}
 		rs.close();
 	}
@@ -277,11 +293,22 @@ public class RefundHandler {
 		return;
 	}
 	
-	public void testExecute(Integer refundId, String player) throws SQLException {
+	public void testExecute(Integer refundId, String player, String serverName) throws SQLException {
 		HashMap<String, Integer> toRefund = new HashMap<String, Integer>();
 		Connection conn = establishConnection();
 		SSUtil util = plugin.getUtil();
 		String thRefundDetail = plugin.getConfig().getString("mysql.tables.items");
+		String mainRefundTable = plugin.getConfig().getString("mysql.tables.refunds");
+	
+		Statement testStatement = conn.createStatement();
+		ResultSet testResult = testStatement.executeQuery("SELECT * from " + mainRefundTable + " WHERE refund_id = " + refundId + " AND servername != '" + serverName + "'");
+		
+		while (testResult.next()) {
+			util.sendMessageGG(util.findOnlinePlayerByName(player), "You can only test this refund on the server it was created");
+			return;
+		}
+			
+		
 		Statement sh = conn.createStatement();
 		ResultSet rs = sh.executeQuery("SELECT rd.item_id, rd.item_meta, rd.amount FROM " + thRefundDetail + " rd WHERE rd.refund_id = " + refundId);
 		while (rs.next()) {
@@ -316,6 +343,8 @@ public class RefundHandler {
 					//System.out.println("Gave " +given+ " of " + material);
 				}
 		}
+		
+		util.sendMessageGG(util.findOnlinePlayerByName(player), "Successfully tested Refund #" + refundId);
 	}
 	
 	public void executePendingRefund(String servername) throws SQLException {
@@ -398,5 +427,22 @@ public class RefundHandler {
 		}
 		conn.close();
 		return returnInt;
+	}
+	
+	private String dateFormatter(String givenDate)
+	{
+		try
+		{
+			SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+			Date newDate = dt.parse(givenDate);
+			
+			SimpleDateFormat dt1 = new SimpleDateFormat ("MMM-dd hh:mm");
+			return dt1.format(newDate);
+		}
+		catch(Exception e)
+		{
+			System.out.println("Failed to properly format date");
+			return givenDate;
+		}
 	}
 }

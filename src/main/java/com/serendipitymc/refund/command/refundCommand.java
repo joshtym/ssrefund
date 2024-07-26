@@ -77,13 +77,24 @@ public class refundCommand extends SubCommandExecutor {
 	public void list(CommandSender sender, String[] args) {
 		util = plugin.getUtil();
 		refunds = plugin.getRH();
+		boolean listAll = false;
 		int page = 1;
-        if (args.length == 1) {
-            page = java.lang.Integer.parseInt(args[0]);
-        }
+		
+        if (args.length == 1)
+			if (args[0].equals("all"))
+				listAll = true;
+			else {
+				try {
+					page = java.lang.Integer.parseInt(args[0]);
+				} catch (Exception e) {
+					page = 1;
+				}
+			}
+					
+				
 		if (sender instanceof Player) {
 			try {
-				refunds.listPendingApprovals((Player) sender, page);
+				refunds.listPendingApprovals((Player) sender, page, listAll);
 			} catch (Exception e) {
 				sender.sendMessage("Something went horribly wrong. Please quote error ssr104");
 			}
@@ -174,15 +185,15 @@ public class refundCommand extends SubCommandExecutor {
 	@command(maximumArgsLength = 1, minimumArgsLength = 1, permissions = {"ssrefund.testexecute"}, usage = "/refund test <id>", description = "Tests a refund request")
 	public void test(CommandSender sender, String[] args) {
 		util = plugin.getUtil();
+		String serverName = Bukkit.getServerName();
 		refunds = plugin.getRH();
+		
 		if (sender instanceof Player) {
 			try {
-				if (util.isNumeric(args[0])) {
-					refunds.testExecute(Integer.parseInt(args[0]), sender.getName().toLowerCase());
-					sender.sendMessage(ChatColor.GOLD + "[Refunds] " + ChatColor.GRAY + "Successfully tested refund # " + args[0]);
-				} else {
+				if (util.isNumeric(args[0]))
+					refunds.testExecute(Integer.parseInt(args[0]), sender.getName().toLowerCase(), serverName);
+				else
 					util.sendMessageGG((Player) sender, "id needs to be a numeric");
-				}
 			} catch (Exception e) {
 					sender.sendMessage("Something went boom. Please quote error ssr108");
 				}
